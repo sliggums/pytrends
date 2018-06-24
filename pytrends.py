@@ -15,12 +15,12 @@ import ast
 class pytrends:
 	def __init__(self):
 		self.cj = requests.get("https://trends.google.com/").cookies
-		self.opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
+		self.opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(self.cj))
 		self.opener.addheaders = [("Referrer", "https://trends.google.com/trends/explore"),
 							('User-Agent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.21 (KHTML, like Gecko) Chrome/19.0.1042.0 Safari/535.21'),
 							("Accept", "text/plain")]
 
-	def encode_time(*args):
+	def encode_time(self, *args):
 		if len(args) == 3:
 			return "%04d-%02d-%02d" % args
 		elif len(args) == 6:
@@ -28,53 +28,49 @@ class pytrends:
 		else:
 			return "all"
 
-	def encode_params(params, explore):
+	def encode_params(self, params, page):
 		params["req"] = json.dumps(params["req"],separators=(',', ':'))
 		params = urllib.urlencode(params)
-		if explore:
+		if page=="explore":
 			params = params.replace('%3A', ':').replace('%2C', ',')
-		else:
+		elif page=="csv":
 			params = params.replace("+", "%20")
 		return params
 
-	def get_params(keywords, title="Interest over time", time="all"):
-		req = {
+	def get_params(self, keywords, title="Interest over time", time="all"):
+		params = {
+			"hl": "en-US",
+			"tz": 240,
+			"req": {
 			"comparisonItem": [
 				{
 					"keyword": keyword,
 					"geo":"",
-					"time": encode_time(*(time[0])) + " " + encode_time(*(time[1])) if isinstance(time, (list, tuple)) else "all"
+					"time": self.encode_time(*(time[0])) + " " + self.encode_time(*(time[1])) if isinstance(time, (list, tuple)) else "all"
 				}
-			for keyword in keywords ],
-			"category": 0,
-			"property": ""
+				for keyword in keywords ],
+				"category": 0,
+				"property": ""
+			}
 		}
-		params = urllib.urlencode(OrderedDict([
-			("hl", "en-US"),
-			("tz", 240),
-			("req", json.dumps(req,separators=(',', ':')))
-		]))
-		params = params.replace('%3A', ':')
-		params = params.replace('%2C', ',')
 
 		#print "https://trends.google.com/trends/api/explore?" + params
 
-		data = self.opener.open("https://trends.google.com/trends/api/explore?" + params).read()
+		data = self.opener.open("https://trends.google.com/trends/api/explore?" + self.encode_params(params, "explore")).read()
 		data = data[data.find("{"):]
 		data = json.loads(data)
 
 		for widget in data["widgets"]:
 			if widget["title"] == title:
-				return {"token":widget["token"], "req":json.dumps(widget["request"], separators=(',',':')), "tz":240}
+				return {"token":widget["token"], "req":widget["request"], "tz":240}
 
 		return dict()
 
-	def download_report(keywords, title="Interest over time", time="all"):
-		params = get_params(keywords, "Interest over time", time)
-		params = urllib.urlencode(params).replace("+", "%20")
+	def download_report(self, keywords, title="Interest over time", time="all"):
+		params = self.get_params(keywords, "Interest over time", time)
 
 		#print 'https://trends.google.com/trends/api/widgetdata/multiline/csv?' + params
-		return = self.opener.open('https://trends.google.com/trends/api/widgetdata/multiline/csv?' + params).read()
+		return self.opener.open('https://trends.google.com/trends/api/widgetdata/multiline/csv?' + self.encode_params(params, "csv")).read()
 		
 
 if __name__ == "__main__":
@@ -115,5 +111,6 @@ if __name__ == "__main__":
 			if time[0] == '[':
 				time = ast.literal_eval(time)
 	
-	print download_report(keywords, title, time)
+	trends = pytrends()
+	print trends.download_report(keywords, title, time)
 
