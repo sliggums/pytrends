@@ -1,21 +1,16 @@
 #!/usr/bin/python
 
-import httplib
+import http.client as httplib
 import urllib
-import urllib2 
-import re
-import csv
 import requests
 import simplejson as json
-from collections import OrderedDict
-from cookielib import CookieJar
 import sys
 import ast
 
 class pytrends:
 	def __init__(self):
 		self.cj = requests.get("https://trends.google.com/").cookies
-		self.opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(self.cj))
+		self.opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.cj))
 		self.opener.addheaders = [("Referrer", "https://trends.google.com/trends/explore"),
 							('User-Agent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.21 (KHTML, like Gecko) Chrome/19.0.1042.0 Safari/535.21'),
 							("Accept", "text/plain")]
@@ -30,7 +25,7 @@ class pytrends:
 
 	def encode_params(self, params, page):
 		params["req"] = json.dumps(params["req"],separators=(',', ':'))
-		params = urllib.urlencode(params)
+		params = urllib.parse.urlencode(params)
 		if page=="explore":
 			params = params.replace('%3A', ':').replace('%2C', ',')
 		elif page=="csv":
@@ -56,7 +51,7 @@ class pytrends:
 
 		#print "https://trends.google.com/trends/api/explore?" + params
 
-		data = self.opener.open("https://trends.google.com/trends/api/explore?" + self.encode_params(params, "explore")).read()
+		data = self.opener.open("https://trends.google.com/trends/api/explore?" + self.encode_params(params, "explore")).read().decode('utf8')
 		data = data[data.find("{"):]
 		data = json.loads(data)
 
@@ -113,5 +108,5 @@ if __name__ == "__main__":
 				time = ast.literal_eval(time)
 	
 	trends = pytrends()
-	print trends.download_report(keywords, title, time)
+	print(trends.download_report(keywords, title, time).decode('utf8'))
 
