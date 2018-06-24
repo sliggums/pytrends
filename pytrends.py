@@ -67,7 +67,7 @@ class pytrends:
 		return dict()
 
 	def download_report(self, keywords, title="Interest over time", time="all"):
-		params = self.get_params(keywords, "Interest over time", time)
+		params = self.get_params(keywords, title, time)
 
 		#print 'https://trends.google.com/trends/api/widgetdata/multiline/csv?' + params
 		return self.opener.open('https://trends.google.com/trends/api/widgetdata/multiline/csv?' + self.encode_params(params, "csv")).read()
@@ -106,9 +106,9 @@ if __name__ == "__main__":
 	for i in range(2, len(sys.argv)):
 		arg = sys.argv[i].split('=')
 		if arg[0] == "title":
-			title = arg[1][1:-1]
+			title = arg[1]
 		elif arg[0] == "time":
-			time = arg[1][1:-1]
+			time = arg[1]
 			if time[0] == '[':
 				time = ast.literal_eval(time)
 	
