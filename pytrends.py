@@ -6,7 +6,6 @@ import requests
 import json
 import sys
 import ast
-from collections import OrderedDict
 
 class pytrends:
 	def __init__(self):
@@ -64,7 +63,7 @@ class pytrends:
 
 		data = self.opener.open("https://trends.google.com/trends/api/explore?" + self.encode_params(params, "explore")).read().decode('utf8')
 		data = data[data.find("{"):]
-		data = json.loads(data, object_pairs_hook=OrderedDict)
+		data = json.loads(data)
 		self.widgets = data["widgets"]
 		self.widget_params = [keywords, time]
 
