@@ -65,7 +65,7 @@ class pytrends:
 		params = self.get_params(keywords, title, time)
 
 		#print 'https://trends.google.com/trends/api/widgetdata/multiline/csv?' + params
-		return self.opener.open('https://trends.google.com/trends/api/widgetdata/multiline/csv?' + self.encode_params(params, "csv")).read()
+		return self.opener.open('https://trends.google.com/trends/api/widgetdata/multiline/csv?' + self.encode_params(params, "csv")).read().decode('utf8')
 		
 
 if __name__ == "__main__":
@@ -108,5 +108,5 @@ if __name__ == "__main__":
 				time = ast.literal_eval(time)
 	
 	trends = pytrends()
-	print(trends.download_report(keywords, title, time).decode('utf8'))
+	print(trends.download_report(keywords, title, time))
 
