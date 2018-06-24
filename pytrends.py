@@ -3,7 +3,7 @@
 import http.client as httplib
 import urllib
 import requests
-import simplejson as json
+import json
 import sys
 import ast
 
