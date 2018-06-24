@@ -6,14 +6,25 @@ import requests
 import json
 import sys
 import ast
+from collections import OrderedDict
 
 class pytrends:
 	def __init__(self):
 		self.cj = requests.get("https://trends.google.com/").cookies
 		self.opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.cj))
-		self.opener.addheaders = [("Referrer", "https://trends.google.com/trends/explore"),
-							('User-Agent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.21 (KHTML, like Gecko) Chrome/19.0.1042.0 Safari/535.21'),
-							("Accept", "text/plain")]
+		self.opener.addheaders = [
+			("Referrer", "https://trends.google.com/trends/explore"),
+			('User-Agent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.21 (KHTML, like Gecko) Chrome/19.0.1042.0 Safari/535.21'),
+			("Accept", "text/plain")
+		]
+		self.api = {
+			"Interest over time": 'https://trends.google.com/trends/api/widgetdata/multiline/csv?',
+			"Interest by region": 'https://trends.google.com/trends/api/widgetdata/comparedgeo/csv?',
+			"Related topics" : 'https://trends.google.com/trends/api/widgetdata/relatedsearches/csv?',
+			"Related queries": 'https://trends.google.com/trends/api/widgetdata/relatedsearches/csv?'
+		}
+		self.widgets = None
+		self.widget_params = []
 
 	def encode_time(self, *args):
 		if len(args) == 3:
@@ -32,7 +43,7 @@ class pytrends:
 			params = params.replace("+", "%20")
 		return params
 
-	def get_params(self, keywords, title="Interest over time", time="all"):
+	def get_widgets(self, keywords, time="all"):
 		params = {
 			"hl": "en-US",
 			"tz": 240,
@@ -53,30 +64,45 @@ class pytrends:
 
 		data = self.opener.open("https://trends.google.com/trends/api/explore?" + self.encode_params(params, "explore")).read().decode('utf8')
 		data = data[data.find("{"):]
-		data = json.loads(data)
+		data = json.loads(data, object_pairs_hook=OrderedDict)
+		self.widgets = data["widgets"]
+		self.widget_params = [keywords, time]
 
-		for widget in data["widgets"]:
+	def get_params(self, keywords, title="Interest over time", time="all"):
+		if not self.widget_params or self.widget_params != [keywords, time]:
+			self.get_widgets(keywords, time)
+
+		for widget in self.widgets:
 			if widget["title"] == title:
-				return {"token":widget["token"], "req":widget["request"], "tz":240}
+				#if title in ["Related queries"]:
+				#	widget["request"]["restriction"]["geo"]["country"] = "US"
+				return {
+					"req":widget["request"],
+					"token":widget["token"],
+					"tz":240
+				}
 
 		return dict()
 
 	def download_report(self, keywords, title="Interest over time", time="all"):
 		params = self.get_params(keywords, title, time)
-
-		#print 'https://trends.google.com/trends/api/widgetdata/multiline/csv?' + params
-		return self.opener.open('https://trends.google.com/trends/api/widgetdata/multiline/csv?' + self.encode_params(params, "csv")).read().decode('utf8')
+		
+		url = self.api[title] + self.encode_params(params, "csv")
+		return self.opener.open(url).read().decode('utf8')
 		
 
 if __name__ == "__main__":
 	"""
-	keywords: word,word,word
-	title: pick one of [
-		"Interest over time",
-		"Interest by region",
-		"Related topics",
-		"Related queries"
-	]
+	Examples:
+	./pytrends.py coat,jacket time="[[2017,1,1],[2018,1,1]]" title="Interest over time,Interest by region"
+	./pytrends.py blockchain time="today+5-y"
+	./pytrends.py Google,Microsoft,Apple title="Related queries"
+
+	keywords: comma separated list
+		word,word,word
+
+	title: comma separated list
+	"Interest over time,Interest by region,Related topics,Related queries"
 
 	time: pick one of [
 		"all",
@@ -96,17 +122,18 @@ if __name__ == "__main__":
 	"""
 
 	keywords=sys.argv[1].split(",")
-	title="Interest over time"
+	titles=["Interest over time"]
 	time="all"
 	for i in range(2, len(sys.argv)):
 		arg = sys.argv[i].split('=')
 		if arg[0] == "title":
-			title = arg[1]
+			titles = arg[1].split(",")
 		elif arg[0] == "time":
 			time = arg[1]
 			if time[0] == '[':
 				time = ast.literal_eval(time)
 	
 	trends = pytrends()
-	print(trends.download_report(keywords, title, time))
+	for title in titles:
+		print(trends.download_report(keywords, title, time))
 
