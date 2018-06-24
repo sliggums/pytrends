@@ -75,6 +75,7 @@ class pytrends:
 
 if __name__ == "__main__":
 	"""
+	keywords: word,word,word
 	title: pick one of [
 		"Interest over time",
 		"Interest by region",
