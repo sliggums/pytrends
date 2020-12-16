@@ -1,6 +1,5 @@
 #!/usr/bin/python
 
-import http.client as httplib
 import urllib
 import requests
 import json
@@ -10,7 +9,7 @@ import ast
 class pytrends:
 	def __init__(self):
 		self.cj = requests.get("https://trends.google.com/").cookies
-		self.opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.cj))
+		self.opener = urllib.build_opener(urllib.HTTPCookieProcessor(self.cj))
 		self.opener.addheaders = [
 			("Referrer", "https://trends.google.com/trends/explore"),
 			('User-Agent', 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.21 (KHTML, like Gecko) Chrome/19.0.1042.0 Safari/535.21'),
